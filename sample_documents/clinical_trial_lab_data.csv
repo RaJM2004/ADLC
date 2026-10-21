@@ -1,0 +1,17 @@
+USUBJID,VISITNUM,VISIT,LBDT,LBTESTCD,LBTEST,LBORRES,LBORRESU,LBORNRLO,LBORNRHI,ANOMALY_FLAG
+SITE-101-0001,1,Baseline,2026-01-10,ALT,Alanine Aminotransferase,24,U/L,7,56,NORMAL
+SITE-101-0001,1,Baseline,2026-01-10,AST,Aspartate Aminotransferase,28,U/L,10,40,NORMAL
+SITE-101-0001,1,Baseline,2026-01-10,BILI,Total Bilirubin,0.8,mg/dL,0.2,1.2,NORMAL
+SITE-101-0001,2,Week 4,2026-02-08,ALT,Alanine Aminotransferase,31,U/L,7,56,NORMAL
+SITE-101-0001,2,Week 4,2026-02-08,AST,Aspartate Aminotransferase,35,U/L,10,40,NORMAL
+SITE-101-0002,1,Baseline,2026-01-12,ALT,Alanine Aminotransferase,45,U/L,7,56,NORMAL
+SITE-101-0002,1,Baseline,2026-01-12,AST,Aspartate Aminotransferase,42,U/L,10,40,NORMAL
+SITE-101-0002,2,Week 4,2026-02-10,ALT,Alanine Aminotransferase,185,U/L,7,56,OUTLIER_HIGH_3X_ULN
+SITE-101-0002,2,Week 4,2026-02-10,AST,Aspartate Aminotransferase,140,U/L,10,40,OUTLIER_HIGH_3X_ULN
+SITE-101-0003,1,Baseline,2026-01-15,ALT,Alanine Aminotransferase,19,U/L,7,56,NORMAL
+SITE-101-0003,1,Baseline,2026-01-15,AST,Aspartate Aminotransferase,,U/L,10,40,MISSING_VALUE
+SITE-102-0004,1,Baseline,2026-01-18,ALT,Alanine Aminotransferase,22,U/L,7,56,NORMAL
+SITE-102-0004,1,Baseline,2026-01-18,AST,Aspartate Aminotransferase,25,U/L,10,40,NORMAL
+SITE-102-0004,2,Week 4,2026-02-16,ALT,Alanine Aminotransferase,26,U/L,7,56,NORMAL
+SITE-102-0004,2,Week 4,2026-02-16,AST,Aspartate Aminotransferase,29,U/L,10,40,NORMAL
+,1,Baseline,2026-01-20,ALT,Alanine Aminotransferase,33,U/L,7,56,COMPLIANCE_ERROR_NULL_USUBJID

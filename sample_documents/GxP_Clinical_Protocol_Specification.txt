@@ -1,0 +1,28 @@
+# CLINICAL TRIAL PROTOCOL SPECIFICATION
+## Document ID: GxP-COPILOT-SPEC-2026-V1
+## System: AI-Assisted Clinical Data Ingestion Copilot
+## Regulatory Scope: FDA 21 CFR Part 11, EU Annex 11, ICH GCP E6(R2), ALCOA+ Principles
+
+### 1. SYSTEM OBJECTIVE & INTENDED USE
+The Clinical CSV Copilot is an AI engineering system designed to automate multi-site clinical trial laboratory data ingestion, missingness analysis, patient ID reconciliation, and safety threshold verification. The system operates as an assistive quality-control tool for Clinical Data Managers (CDMs).
+
+### 2. DATA INGESTION & FORMAT SPECIFICATIONS (REQ-INGEST)
+- REQ-01: The system shall accept UTF-8 and ASCII formatted comma-delimited (.csv) and tab-delimited (.tsv) files up to 25 MB in size.
+- REQ-02: Every uploaded file must undergo SHA-256 cryptographic checksum calculation prior to ingestion and be logged in the permanent audit repository.
+- REQ-03: Files containing malformed delimiters, unescaped quotation characters, or truncated records must be rejected with line-specific diagnostic logs.
+
+### 3. MANDATORY CLINICAL DATA INTEGRITY RULES (REQ-INTEGRITY)
+- REQ-04: Every clinical record must contain non-null values for:
+  a) USUBJID (Unique Subject Identifier - format: SITE-XXX-YYYY)
+  b) VISITNUM (Clinical Visit Number - integer >= 1)
+  c) LBDT (Laboratory Assessment Date - ISO 8601 YYYY-MM-DD)
+  d) LBTESTCD (Laboratory Test Code - standard CDISC term)
+- REQ-05: Missing Subject Identifier: If USUBJID is null or empty in > 0.0% of records, the dataset must immediately be quarantined and flagged as a Critical Protocol Deviation.
+
+### 4. STATISTICAL MISSINGNESS & OUTLIER DETECTION (REQ-SAFETY)
+- REQ-06: The system shall calculate the column-wise missingness percentage. If overall laboratory test result missingness exceeds 5.0% for primary efficacy endpoints, an automated notification must be generated for the study lead.
+- REQ-07: Biological Plausibility Checks: Clinical laboratory results (e.g., ALT, AST, Bilirubin, Creatinine) exceeding 3 times the Upper Limit of Normal (3x ULN) must be highlighted as potential Drug-Induced Liver Injury (DILI) safety signals.
+
+### 5. AUDIT TRAILS & ELECTRONIC RECORDS (REQ-REGULATORY)
+- REQ-08: In compliance with 21 CFR §11.10(e), all data transformations, human approvals, and agent inferences must be recorded with time-stamped, unalterable audit trails capturing the operator ID and cryptographic hash of the input document.
+- REQ-09: No AI agent may autonomously alter authoritative database records or sign off on safety exceptions without dual human reviewer confirmation.
