@@ -42,6 +42,14 @@ def list_project_tasks(
 ):
     tasks_col = db_manager.get_collection("project_tasks")
     items = tasks_col.find({"project_id": project_id})
+    if not items:
+        req_col = db_manager.get_collection("project_requirements")
+        reqs = req_col.find({"project_id": project_id, "review_status": "approved"})
+        if not reqs:
+            reqs = req_col.find({"project_id": project_id})
+        if reqs:
+            plan = planning_agent.generate_plan(project_id=project_id, approved_requirements=reqs)
+            items = plan.get("tasks", [])
     return {"total": len(items), "items": items}
 
 @router.patch("/tasks/{task_id}", tags=["Planning & Tasks"])

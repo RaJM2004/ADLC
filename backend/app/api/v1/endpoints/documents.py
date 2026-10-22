@@ -98,43 +98,87 @@ def list_project_documents(
     items = col.find({"project_id": project_id})
     return {"total": len(items), "items": items}
 
+@router.get("/documents/samples/list", tags=["Documents"])
+def list_sample_documents():
+    """
+    Dynamically discover all sample files available on the server without hardcoded filenames.
+    """
+    sample_dir = BASE_DIR / "sample_documents"
+    if not sample_dir.exists():
+        return {"total": 0, "items": []}
+    
+    files = []
+    for f in sample_dir.iterdir():
+        if f.is_file():
+            files.append({
+                "filename": f.name,
+                "file_type": f.suffix.replace(".", "").lower(),
+                "size_bytes": f.stat().st_size,
+                "download_url": f"/api/v1/documents/sample/{f.name}/download"
+            })
+    return {"total": len(files), "items": files}
+
 @router.post("/projects/{project_id}/documents/load-sample", response_model=DocumentMetadataResponse, tags=["Documents"])
 async def load_sample_document(
     project_id: str,
-    sample_type: str = "spec",
+    sample_type: Optional[str] = None,
+    filename: Optional[str] = None,
     current_user: CurrentUser = Depends(get_current_user)
 ):
-    # Verify project exists
+    """
+    Dynamically loads any sample document from sample_documents into the target project.
+    Accepts specific filename or auto-resolves from available files.
+    """
     project_service.get_project(project_id)
+    sample_dir = BASE_DIR / "sample_documents"
+    if not sample_dir.exists():
+        raise HTTPException(status_code=404, detail="Sample documents directory not found")
 
-    # Locate sample file in sample_documents directory
-    base_dir = BASE_DIR
-    if sample_type == "csv":
-        sample_path = base_dir / "sample_documents" / "clinical_trial_lab_data.csv"
-        filename = "clinical_trial_lab_data.csv"
-    else:
-        sample_path = base_dir / "sample_documents" / "GxP_Clinical_Protocol_Specification.txt"
-        filename = "GxP_Clinical_Protocol_Specification.txt"
+    target_path = None
+    target_filename = None
 
-    if not sample_path.exists():
-        raise HTTPException(status_code=404, detail=f"Sample document file not found at {sample_path}")
+    if filename and filename.strip():
+        safe_name = Path(filename).name
+        candidate = sample_dir / safe_name
+        if candidate.exists() and candidate.is_file():
+            target_path = candidate
+            target_filename = safe_name
 
-    with open(sample_path, "rb") as f:
+    if not target_path:
+        # Dynamically search directory matching sample_type extension
+        desired_ext = ".csv" if (sample_type and "csv" in sample_type.lower()) else None
+        available_files = [f for f in sample_dir.iterdir() if f.is_file()]
+        
+        if desired_ext:
+            for f in available_files:
+                if f.suffix.lower() == desired_ext:
+                    target_path = f
+                    target_filename = f.name
+                    break
+        
+        if not target_path and available_files:
+            target_path = available_files[0]
+            target_filename = available_files[0].name
+
+    if not target_path or not target_path.exists():
+        raise HTTPException(status_code=404, detail="No matching sample document found in sample_documents directory")
+
+    with open(target_path, "rb") as f:
         saved_path, checksum, file_size = storage_service.save_file(
             project_id=project_id,
-            filename=filename,
+            filename=target_filename,
             file_obj=f
         )
 
-    extracted_text, parse_meta = document_parser.extract_text(saved_path, filename)
+    extracted_text, parse_meta = document_parser.extract_text(saved_path, target_filename)
     doc_id = f"doc_{uuid.uuid4().hex[:12]}"
     now = datetime.utcnow().isoformat()
-    ext = sample_path.suffix.replace(".", "")
+    ext = target_path.suffix.replace(".", "").lower()
 
     doc_record = {
         "id": doc_id,
         "project_id": project_id,
-        "filename": filename,
+        "filename": target_filename,
         "file_type": ext,
         "file_size_bytes": file_size,
         "sha256_checksum": checksum,
@@ -151,7 +195,7 @@ async def load_sample_document(
     return DocumentMetadataResponse(
         id=doc_id,
         project_id=project_id,
-        filename=filename,
+        filename=target_filename,
         file_type=ext,
         file_size_bytes=file_size,
         sha256_checksum=checksum,
@@ -169,4 +213,24 @@ def get_document(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
+
+@router.get("/documents/sample/{filename}/download", tags=["Documents"])
+def download_sample_document(filename: str):
+    """
+    Dynamically stream any file present in sample_documents directory without hardcoded lists.
+    """
+    from fastapi.responses import FileResponse
+    safe_filename = Path(filename).name
+    sample_dir = (BASE_DIR / "sample_documents").resolve()
+    file_path = (sample_dir / safe_filename).resolve()
+
+    # Prevent directory traversal attacks
+    if not str(file_path).startswith(str(sample_dir)) or not file_path.is_file():
+        raise HTTPException(status_code=404, detail=f"Sample file '{safe_filename}' not found")
+    
+    return FileResponse(
+        path=str(file_path),
+        filename=safe_filename,
+        media_type="application/octet-stream"
+    )
 

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { Project } from '../types';
+import { useProject } from '../context/ProjectContext';
 
 interface ComponentItem {
   name: string;
@@ -67,9 +68,8 @@ export const ArchitectureView: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlProjectId = searchParams.get('projectId');
+  const { projects, selectedProjectId, setSelectedProjectId } = useProject();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [archData, setArchData] = useState<ArchitectureData | null>(null);
   const [activeTab, setActiveTab] = useState<'topology' | 'openapi' | 'dictionary' | 'security'>('topology');
   const [loading, setLoading] = useState(false);
@@ -77,18 +77,11 @@ export const ArchitectureView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEndpoint, setSelectedEndpoint] = useState<EndpointItem | null>(null);
 
-  // 1. Fetch projects
+  // If url has projectId, apply it
   useEffect(() => {
-    api.listProjects().then((res) => {
-      const items = res.items || [];
-      setProjects(items);
-      if (urlProjectId && items.some((p) => p.id === urlProjectId)) {
-        setSelectedProjectId(urlProjectId);
-      } else if (items.length > 0) {
-        const demo = items.find((p) => p.is_demo);
-        setSelectedProjectId(demo ? demo.id : items[0].id);
-      }
-    }).catch(console.error);
+    if (urlProjectId && urlProjectId !== selectedProjectId) {
+      setSelectedProjectId(urlProjectId);
+    }
   }, [urlProjectId]);
 
   // 2. Fetch architecture data
@@ -221,7 +214,7 @@ export const ArchitectureView: React.FC = () => {
           <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
             <Server className="w-5 h-5 stroke-[2]" />
           </div>
-          <div className="text-3xl font-black text-blue-600 tracking-tight">{components.length || 5}</div>
+          <div className="text-3xl font-black text-blue-600 tracking-tight">{components.length}</div>
           <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">
             System Components
           </div>
@@ -233,7 +226,7 @@ export const ArchitectureView: React.FC = () => {
           <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
             <FileCode2 className="w-5 h-5 stroke-[2]" />
           </div>
-          <div className="text-3xl font-black text-emerald-600 tracking-tight">{endpoints.length || 4}</div>
+          <div className="text-3xl font-black text-emerald-600 tracking-tight">{endpoints.length}</div>
           <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">
             RESTful API Endpoints
           </div>
@@ -245,7 +238,7 @@ export const ArchitectureView: React.FC = () => {
           <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2">
             <Database className="w-5 h-5 stroke-[2]" />
           </div>
-          <div className="text-3xl font-black text-indigo-600 tracking-tight">{dictionary.length || 5}</div>
+          <div className="text-3xl font-black text-indigo-600 tracking-tight">{dictionary.length}</div>
           <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">
             CDISC Variables
           </div>

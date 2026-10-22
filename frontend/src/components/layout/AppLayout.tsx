@@ -27,10 +27,12 @@ import {
 
 import { api } from '../../api/client';
 import { CreateProjectModal } from '../modals/CreateProjectModal';
+import { useProject } from '../../context/ProjectContext';
 
 export const AppLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { projects, selectedProjectId, setSelectedProjectId } = useProject();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -306,7 +308,26 @@ export const AppLayout: React.FC = () => {
             </div>
 
             {/* Right Header Controls */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              {/* Global Project Switcher Pill */}
+              <div className="flex items-center space-x-2 bg-[#f1f5f9] hover:bg-[#eaf0f6] border border-slate-200/80 rounded-full px-3.5 py-1.5 transition-all text-xs">
+                <Folder className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                  Project:
+                </span>
+                <select
+                  value={selectedProjectId}
+                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  className="bg-transparent text-slate-800 font-bold focus:outline-none cursor-pointer max-w-[210px] truncate pr-1"
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id} className="text-slate-900 font-medium">
+                      {p.name} {p.is_demo ? '(Demo)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Grid / List Switcher Pill */}
               <div className="flex items-center p-1 bg-[#f1f5f9] rounded-full border border-slate-200/50">
                 <button

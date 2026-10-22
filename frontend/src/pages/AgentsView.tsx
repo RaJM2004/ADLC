@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { Project } from '../types';
+import { useProject } from '../context/ProjectContext';
 
 interface AgentItem {
   id: string;
@@ -50,26 +51,18 @@ export const AgentsView: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlProjectId = searchParams.get('projectId');
+  const { projects, selectedProjectId, setSelectedProjectId } = useProject();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedAgentId, setSelectedAgentId] = useState<string>('agent-01');
   const [search, setSearch] = useState('');
   const [runningAgentId, setRunningAgentId] = useState<string | null>(null);
   const [artifactModalOpen, setArtifactModalOpen] = useState(false);
 
-  // 1. Fetch projects
+  // If url has projectId, apply it
   useEffect(() => {
-    api.listProjects().then((res) => {
-      const items = res.items || [];
-      setProjects(items);
-      if (urlProjectId && items.some((p) => p.id === urlProjectId)) {
-        setSelectedProjectId(urlProjectId);
-      } else if (items.length > 0) {
-        const demo = items.find((p) => p.is_demo);
-        setSelectedProjectId(demo ? demo.id : items[0].id);
-      }
-    }).catch(console.error);
+    if (urlProjectId && urlProjectId !== selectedProjectId) {
+      setSelectedProjectId(urlProjectId);
+    }
   }, [urlProjectId]);
 
   // Initial 11 Specialist Agents Registry

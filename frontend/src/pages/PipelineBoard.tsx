@@ -41,13 +41,14 @@ interface StageColumn {
   tasks: StageTask[];
 }
 
+import { useProject } from '../context/ProjectContext';
+
 export const PipelineBoard: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlProjectId = searchParams.get('projectId');
+  const { projects, selectedProjectId, setSelectedProjectId } = useProject();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [viewMode, setViewMode] = useState<'live' | 'template'>('live');
   const [loading, setLoading] = useState(false);
 
@@ -58,25 +59,32 @@ export const PipelineBoard: React.FC = () => {
   const [liveEvaluation, setLiveEvaluation] = useState<any | null>(null);
   const [liveRisks, setLiveRisks] = useState<any[]>([]);
 
-  // 1. Fetch projects
+  // If url has projectId, apply it
   useEffect(() => {
-    api.listProjects().then((res) => {
-      const items = res.items || [];
-      setProjects(items);
-      if (urlProjectId && items.some((p) => p.id === urlProjectId)) {
-        setSelectedProjectId(urlProjectId);
-      } else if (items.length > 0) {
-        const demo = items.find((p) => p.is_demo);
-        setSelectedProjectId(demo ? demo.id : items[0].id);
-      }
-    }).catch(console.error);
+    if (urlProjectId && urlProjectId !== selectedProjectId) {
+      setSelectedProjectId(urlProjectId);
+    }
   }, [urlProjectId]);
 
   // 2. Fetch all live stage artifacts
   const fetchLivePipeline = async (projId: string) => {
-    if (!projId) return;
+    if (!projId) {
+      setLiveRequirements([]);
+      setLiveTasks([]);
+      setLiveArchitecture(null);
+      setLiveEvaluation(null);
+      setLiveRisks([]);
+      return;
+    }
     try {
       setLoading(true);
+      // Reset first so old project data isn't shown during load
+      setLiveRequirements([]);
+      setLiveTasks([]);
+      setLiveArchitecture(null);
+      setLiveEvaluation(null);
+      setLiveRisks([]);
+
       const [reqRes, tasksRes, archRes, evalRes, riskRes] = await Promise.all([
         fetch(`/api/v1/projects/${projId}/requirements`),
         fetch(`/api/v1/projects/${projId}/tasks`),
@@ -303,7 +311,7 @@ export const PipelineBoard: React.FC = () => {
         status: (r.review_status === 'approved' ? 'completed' : 'in_progress') as any,
         route: '/requirements',
         tags: [
-          { label: r.priority.toUpperCase(), color: r.priority === 'critical' ? 'bg-rose-500 text-white' : 'bg-blue-500 text-white' },
+          { label: (r.priority || 'Normal').toUpperCase(), color: r.priority === 'critical' ? 'bg-rose-500 text-white' : 'bg-blue-500 text-white' },
           { label: 'GxP', color: 'bg-teal-600 text-white' },
         ],
       })),
@@ -311,7 +319,7 @@ export const PipelineBoard: React.FC = () => {
     {
       id: 'architecture',
       name: '2. Architecture & Design',
-      badge: `Agent 3 (${liveArchitecture?.endpoints?.length || 4} APIs)`,
+      badge: `Agent 3 (${liveArchitecture?.endpoints?.length || 0} APIs)`,
       tasks: (liveArchitecture?.endpoints || []).map((ep: any, idx: number) => ({
         id: `ep_${idx}`,
         title: `${ep.method} ${ep.path} - ${ep.summary}`,
@@ -321,7 +329,7 @@ export const PipelineBoard: React.FC = () => {
         route: '/architecture',
         tags: [
           { label: ep.method, color: ep.method === 'POST' ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white' },
-          { label: ep.requirement_id, color: 'bg-slate-700 text-white' },
+          { label: ep.requirement_id || 'REQ', color: 'bg-slate-700 text-white' },
         ],
       })),
     },
@@ -332,21 +340,21 @@ export const PipelineBoard: React.FC = () => {
       tasks: liveTasks.map((t) => ({
         id: t.id,
         title: t.title,
-        code: t.id.slice(0, 8),
+        code: (t.id || '').slice(0, 8),
         category: t.role,
         role: t.role,
         status: (t.status === 'done' ? 'completed' : t.status === 'in_progress' ? 'in_progress' : 'pending') as any,
         route: '/tasks',
         tags: [
-          { label: t.role.split(' ')[0], color: 'bg-indigo-600 text-white' },
-          { label: `${t.estimated_hours}h`, color: 'bg-slate-600 text-white' },
+          { label: (t.role || 'Eng').split(' ')[0], color: 'bg-indigo-600 text-white' },
+          { label: `${t.estimated_hours || 8}h`, color: 'bg-slate-600 text-white' },
         ],
       })),
     },
     {
       id: 'verification',
       name: '4. Verification & Risks',
-      badge: `Agent 7 & 8 (${liveEvaluation?.summary?.total_tests || 5} Tests)`,
+      badge: `Agent 7 & 8 (${liveEvaluation?.summary?.total_tests || liveEvaluation?.results?.length || 0} Tests, ${liveRisks.length} Risks)`,
       tasks: [
         ...(liveEvaluation?.results || []).map((tc: any) => ({
           id: tc.id,

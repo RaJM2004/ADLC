@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { Project } from '../types';
+import { useProject } from '../context/ProjectContext';
 
 interface TaskItem {
   id: string;
@@ -51,28 +52,19 @@ export const TasksView: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlProjectId = searchParams.get('projectId');
+  const { projects, selectedProjectId, setSelectedProjectId } = useProject();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [testCases, setTestCases] = useState<TestCaseItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'tests'>('tasks');
 
-  // Load projects
+  // If url has projectId, apply it
   useEffect(() => {
-    api.listProjects().then((res) => {
-      const items = res.items || [];
-      setProjects(items);
-      if (urlProjectId && items.some((p) => p.id === urlProjectId)) {
-        setSelectedProjectId(urlProjectId);
-      } else if (items.length > 0) {
-        // default to first or demo
-        const demo = items.find((p) => p.is_demo);
-        setSelectedProjectId(demo ? demo.id : items[0].id);
-      }
-    }).catch(() => null);
+    if (urlProjectId && urlProjectId !== selectedProjectId) {
+      setSelectedProjectId(urlProjectId);
+    }
   }, [urlProjectId]);
 
   const fetchTasksAndTests = async (projId: string) => {

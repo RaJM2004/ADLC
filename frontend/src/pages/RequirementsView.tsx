@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { Project } from '../types';
+import { useProject } from '../context/ProjectContext';
 
 interface Requirement {
   id: string;
@@ -43,8 +44,8 @@ interface Requirement {
 export const RequirementsView: React.FC = () => {
   const [searchParams] = useSearchParams();
   const urlProjectId = searchParams.get('projectId');
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const { projects, selectedProjectId, setSelectedProjectId } = useProject();
+
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
@@ -57,22 +58,11 @@ export const RequirementsView: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'draft' | 'approved' | 'rejected'>('all');
   const [search, setSearch] = useState('');
 
-  // Load projects
+  // If url has projectId, apply it
   useEffect(() => {
-    api.listProjects().then((res) => {
-      const items = res.items || [];
-      setProjects(items);
-      if (urlProjectId && items.some((p) => p.id === urlProjectId)) {
-        setSelectedProjectId(urlProjectId);
-      } else {
-        const demo = items.find((p) => p.is_demo);
-        if (demo) {
-          setSelectedProjectId(demo.id);
-        } else if (items.length > 0) {
-          setSelectedProjectId(items[0].id);
-        }
-      }
-    }).catch(() => null);
+    if (urlProjectId && urlProjectId !== selectedProjectId) {
+      setSelectedProjectId(urlProjectId);
+    }
   }, [urlProjectId]);
 
   // Fetch documents for selected project

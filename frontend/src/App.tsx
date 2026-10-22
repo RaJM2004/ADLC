@@ -14,11 +14,14 @@ import { RisksView } from './pages/RisksView';
 import { TraceabilityView } from './pages/TraceabilityView';
 import { PlaceholderView } from './pages/PlaceholderView';
 
+import { ProjectProvider } from './context/ProjectContext';
+
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<AppLayout />}>
+      <ProjectProvider>
+        <Routes>
+          <Route path="/" element={<AppLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="projects" element={<Projects />} />
           <Route path="projects/:projectId" element={<ProjectWorkspace />} />
@@ -97,6 +100,7 @@ export const App: React.FC = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
+      </ProjectProvider>
     </BrowserRouter>
   );
 };

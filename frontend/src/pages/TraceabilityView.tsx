@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { Project } from '../types';
+import { useProject } from '../context/ProjectContext';
 
 interface GitCommitItem {
   short_sha: string;
@@ -53,9 +54,8 @@ export const TraceabilityView: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlProjectId = searchParams.get('projectId');
+  const { projects, selectedProjectId, setSelectedProjectId } = useProject();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [gitCommits, setGitCommits] = useState<GitCommitItem[]>([]);
@@ -63,6 +63,51 @@ export const TraceabilityView: React.FC = () => {
   const [customRepoInput, setCustomRepoInput] = useState<string>('');
   const [gitBranch, setGitBranch] = useState<string>('main');
   const [isSyncingGit, setIsSyncingGit] = useState<boolean>(false);
+
+  const [matrixRows, setMatrixRows] = useState<MatrixRow[]>([]);
+  const [matrixStats, setMatrixStats] = useState({
+    totalRequirements: 0,
+    approvedCount: 0,
+    passRatePct: 0.0,
+    risksMitigatedCount: 0
+  });
+
+  // If url has projectId, apply it
+  useEffect(() => {
+    if (urlProjectId && urlProjectId !== selectedProjectId) {
+      setSelectedProjectId(urlProjectId);
+    }
+  }, [urlProjectId]);
+
+  const fetchTraceabilityMatrix = async (projId: string) => {
+    if (!projId) return;
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/v1/projects/${projId}/traceability`);
+      if (res.ok) {
+        const data = await res.json();
+        setMatrixRows(data.rows || []);
+        setMatrixStats({
+          totalRequirements: data.total_requirements || 0,
+          approvedCount: data.approved_count || 0,
+          passRatePct: data.pass_rate_pct ?? 0,
+          risksMitigatedCount: data.risks_mitigated_count || 0
+        });
+      } else {
+        setMatrixRows([]);
+        setMatrixStats({
+          totalRequirements: 0,
+          approvedCount: 0,
+          passRatePct: 0.0,
+          risksMitigatedCount: 0
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load live traceability matrix:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchCommits = (repoToFetch?: string) => {
     setIsSyncingGit(true);
@@ -81,88 +126,17 @@ export const TraceabilityView: React.FC = () => {
       .finally(() => setIsSyncingGit(false));
   };
 
-  // 1. Fetch projects and git commits
   useEffect(() => {
-    api.listProjects().then((res) => {
-      const items = res.items || [];
-      setProjects(items);
-      if (urlProjectId && items.some((p) => p.id === urlProjectId)) {
-        setSelectedProjectId(urlProjectId);
-      } else if (items.length > 0) {
-        const demo = items.find((p) => p.is_demo);
-        setSelectedProjectId(demo ? demo.id : items[0].id);
-      }
-    }).catch(console.error);
-
     fetchCommits();
-  }, [urlProjectId]);
+  }, []);
 
-  const matrixRows: MatrixRow[] = [
-    {
-      req_id: 'REQ-CSV-001',
-      req_title: 'CSV File Ingestion, Encoding, and Header Validation',
-      req_priority: 'Critical',
-      task_title: 'Implement Streamed CSV Parser with UTF-8 Enforcement',
-      task_role: 'Backend Engineer',
-      test_case_id: 'TC-01',
-      test_case_name: 'UTF-8 Encoding & CDISC Header Validation',
-      eval_status: 'PASSED',
-      eval_evidence: 'Verified UTF-8 encoding. All 10 mandatory CDISC columns validated: USUBJID, VISITNUM, VISIT, LBDT, LBTESTCD...',
-      risk_code: 'FM-04',
-      risk_mode: 'Non-UTF-8 Encoding or Truncated CDISC SDTM Column Headers',
-      gxp_standard: '21 CFR §11.10(a) / CDISC SDTM v3.3',
-      git_commit_sha: '5cb6f22',
-      git_commit_url: gitRepo ? `${gitRepo}/commit/5cb6f22` : '#5cb6f22'
-    },
-    {
-      req_id: 'REQ-CSV-002',
-      req_title: 'Cryptographic Checksum and Immutability Verification',
-      req_priority: 'Critical',
-      task_title: 'Implement SHA-256 Ingestion Checksum & Ledger Logging',
-      task_role: 'Backend Engineer',
-      test_case_id: 'TC-02',
-      test_case_name: 'Cryptographic Checksum & Immutability Verification',
-      eval_status: 'PASSED',
-      eval_evidence: 'SHA-256 Checksum verified: 4c547456a5368e062f6f... matches immutable ingest hash.',
-      risk_code: 'FM-01',
-      risk_mode: 'Silent File Corruption or Bit-Rot during Ingestion',
-      gxp_standard: '21 CFR §11.10(e) / ALCOA+ Original',
-      git_commit_sha: '5cb6f22',
-      git_commit_url: gitRepo ? `${gitRepo}/commit/5cb6f22` : '#5cb6f22'
-    },
-    {
-      req_id: 'REQ-CSV-003',
-      req_title: 'Mandatory Patient Identifier and Quarantine Execution',
-      req_priority: 'Critical',
-      task_title: 'Build Patient Quarantine Protocol & Isolation Boundary',
-      task_role: 'Data Scientist',
-      test_case_id: 'TC-03',
-      test_case_name: 'Mandatory Patient Identification Column Checks',
-      eval_status: 'PASSED',
-      eval_evidence: 'Identified null USUBJID on Line 17. Correctly quarantined record under COMPLIANCE_ERROR_NULL_USUBJID.',
-      risk_code: 'FM-02',
-      risk_mode: 'Ingestion of Null / Malformed Subject Identifier (USUBJID)',
-      gxp_standard: '21 CFR §11.10(b) / ALCOA+ Attributable',
-      git_commit_sha: 'e73e9b3',
-      git_commit_url: gitRepo ? `${gitRepo}/commit/e73e9b3` : '#e73e9b3'
-    },
-    {
-      req_id: 'REQ-CSV-004',
-      req_title: 'Missing Lab Values & 3x ULN DILI Toxicity Alerts',
-      req_priority: 'High',
-      task_title: 'Develop Safety Outlier & 3x ULN DILI Detection Engine',
-      task_role: 'Clinical Data Manager',
-      test_case_id: 'TC-05',
-      test_case_name: 'Biological Plausibility & 3x ULN Liver Safety Outlier Alert',
-      eval_status: 'PASSED',
-      eval_evidence: 'Flagged 2 Drug-Induced Liver Injury (DILI) signals: Line 9 (ALT=185.0 U/L), Line 10 (AST=140.0 U/L).',
-      risk_code: 'FM-03',
-      risk_mode: 'Undetected Extreme Liver Enzyme Elevation (>3x ULN DILI)',
-      gxp_standard: 'FDA DILI Guidance / ALCOA+ Accurate',
-      git_commit_sha: '5c5909b',
-      git_commit_url: gitRepo ? `${gitRepo}/commit/5c5909b` : '#5c5909b'
+  useEffect(() => {
+    if (selectedProjectId) {
+      fetchTraceabilityMatrix(selectedProjectId);
+    } else {
+      setMatrixRows([]);
     }
-  ];
+  }, [selectedProjectId]);
 
   const filteredRows = matrixRows.filter(
     (row) =>
@@ -242,11 +216,17 @@ export const TraceabilityView: React.FC = () => {
           <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
             <FileText className="w-5 h-5 stroke-[2]" />
           </div>
-          <div className="text-3xl font-black text-blue-600 tracking-tight">100%</div>
+          <div className="text-3xl font-black text-blue-600 tracking-tight">
+            {matrixStats.totalRequirements > 0
+              ? `${Math.round((matrixStats.approvedCount / matrixStats.totalRequirements) * 100)}%`
+              : '100%'}
+          </div>
           <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">
             Requirements Traced
           </div>
-          <div className="text-[11px] text-slate-400 mt-0.5">4 of 4 Approved Reqs</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">
+            {matrixStats.approvedCount} of {matrixStats.totalRequirements} Live Reqs
+          </div>
         </div>
 
         {/* Metric 2 */}
@@ -254,7 +234,9 @@ export const TraceabilityView: React.FC = () => {
           <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
             <CheckCircle2 className="w-5 h-5 stroke-[2]" />
           </div>
-          <div className="text-3xl font-black text-emerald-600 tracking-tight">100%</div>
+          <div className="text-3xl font-black text-emerald-600 tracking-tight">
+            {matrixStats.passRatePct}%
+          </div>
           <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">
             Verification Pass Rate
           </div>
@@ -266,7 +248,9 @@ export const TraceabilityView: React.FC = () => {
           <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2">
             <ShieldCheck className="w-5 h-5 stroke-[2]" />
           </div>
-          <div className="text-3xl font-black text-indigo-600 tracking-tight">4 / 4</div>
+          <div className="text-3xl font-black text-indigo-600 tracking-tight">
+            {matrixStats.risksMitigatedCount} / {matrixStats.risksMitigatedCount}
+          </div>
           <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">
             FMEA Mitigations
           </div>
@@ -406,13 +390,26 @@ export const TraceabilityView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredRows.map((r) => (
-                <tr key={r.req_id} className="hover:bg-slate-50/60 transition-colors">
-                  {/* Req */}
-                  <td className="px-4 py-4 space-y-1 align-top max-w-[180px]">
-                    <span className="font-mono font-bold text-blue-600 text-xs block">
-                      {r.req_id}
-                    </span>
+              {filteredRows.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <FileText className="w-8 h-8 text-slate-300" />
+                      <span className="text-sm font-bold text-slate-700">No Traceability Records For This Project</span>
+                      <span className="text-xs text-slate-400 max-w-md">
+                        This project currently has 0 requirements in MongoDB. Ingest a protocol document or run Specialist Agent 1 to populate the live RTM.
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredRows.map((r) => (
+                  <tr key={`${r.req_id}-${r.task_title}`} className="hover:bg-slate-50/60 transition-colors">
+                    {/* Req */}
+                    <td className="px-4 py-4 space-y-1 align-top max-w-[180px]">
+                      <span className="font-mono font-bold text-blue-600 text-xs block">
+                        {r.req_id}
+                      </span>
                     <div className="font-semibold text-slate-800 text-[11px] leading-snug">
                       {r.req_title}
                     </div>
@@ -494,7 +491,7 @@ export const TraceabilityView: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

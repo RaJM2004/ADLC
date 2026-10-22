@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { Project } from '../types';
+import { useProject } from '../context/ProjectContext';
 
 interface RiskItem {
   id: string;
@@ -46,9 +47,8 @@ export const RisksView: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlProjectId = searchParams.get('projectId');
+  const { projects, selectedProjectId, setSelectedProjectId } = useProject();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [risks, setRisks] = useState<RiskItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [assessing, setAssessing] = useState(false);
@@ -57,18 +57,11 @@ export const RisksView: React.FC = () => {
   const [signOffModalOpen, setSignOffModalOpen] = useState(false);
   const [signOffRole, setSignOffRole] = useState('Lead Quality Assurance Officer');
 
-  // 1. Fetch projects
+  // If url has projectId, apply it
   useEffect(() => {
-    api.listProjects().then((res) => {
-      const items = res.items || [];
-      setProjects(items);
-      if (urlProjectId && items.some((p) => p.id === urlProjectId)) {
-        setSelectedProjectId(urlProjectId);
-      } else if (items.length > 0) {
-        const demo = items.find((p) => p.is_demo);
-        setSelectedProjectId(demo ? demo.id : items[0].id);
-      }
-    }).catch(console.error);
+    if (urlProjectId && urlProjectId !== selectedProjectId) {
+      setSelectedProjectId(urlProjectId);
+    }
   }, [urlProjectId]);
 
   // 2. Fetch risks
@@ -144,7 +137,7 @@ export const RisksView: React.FC = () => {
   );
 
   const criticalHazards = risks.filter((r) => r.severity === 5).length;
-  const avgRPN = risks.length > 0 ? (risks.reduce((acc, r) => acc + r.rpn, 0) / risks.length).toFixed(1) : '15.0';
+  const avgRPN = risks.length > 0 ? (risks.reduce((acc, r) => acc + r.rpn, 0) / risks.length).toFixed(1) : '0.0';
 
   return (
     <div className="space-y-6 max-w-[1440px] mx-auto">
