@@ -77,4 +77,31 @@ export const api = {
     });
     return handleResponse<Project>(res);
   },
+
+  async getGitCommits(
+    limit: number = 10,
+    repoUrl?: string,
+    projectId?: string
+  ): Promise<{
+    repo: string;
+    branch: string;
+    commits: Array<{
+      short_sha: string;
+      full_sha: string;
+      author: string;
+      date: string;
+      message: string;
+      github_url: string;
+      branch: string;
+      verified: boolean;
+    }>;
+    error?: string;
+  }> {
+    const params = new URLSearchParams();
+    params.set('limit', String(limit));
+    if (repoUrl) params.set('repo_url', repoUrl);
+    if (projectId) params.set('project_id', projectId);
+    const res = await fetch(`${API_BASE}/git/commits?${params.toString()}`);
+    return handleResponse(res);
+  },
 };
