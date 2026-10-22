@@ -9,6 +9,7 @@ import { AgentsView } from './pages/AgentsView';
 import { EvaluationsView } from './pages/EvaluationsView';
 import { RequirementsView } from './pages/RequirementsView';
 import { TasksView } from './pages/TasksView';
+import { ArchitectureView } from './pages/ArchitectureView';
 import { RisksView } from './pages/RisksView';
 import { TraceabilityView } from './pages/TraceabilityView';
 import { PlaceholderView } from './pages/PlaceholderView';
@@ -24,6 +25,7 @@ export const App: React.FC = () => {
           <Route path="pipeline" element={<PipelineBoard />} />
           <Route path="assets" element={<PipelineBoard />} />
           <Route path="agents" element={<AgentsView />} />
+          <Route path="architecture" element={<ArchitectureView />} />
           <Route path="evaluations" element={<EvaluationsView />} />
           <Route path="requirements" element={<RequirementsView />} />
           <Route path="tasks" element={<TasksView />} />
@@ -41,6 +43,7 @@ export const App: React.FC = () => {
           />
           <Route path="risks" element={<RisksView />} />
           <Route path="traceability" element={<TraceabilityView />} />
+
 
           <Route
             path="evidence"

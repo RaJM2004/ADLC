@@ -21,8 +21,10 @@ import {
   FileCheck2,
   Bot,
   CheckSquare,
-  FileText
+  FileText,
+  Server
 } from 'lucide-react';
+
 import { api } from '../../api/client';
 import { CreateProjectModal } from '../modals/CreateProjectModal';
 
@@ -133,6 +135,20 @@ export const AppLayout: React.FC = () => {
                 </NavLink>
 
                 <NavLink
+                  to="/architecture"
+                  className={({ isActive }) =>
+                    `flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                      isActive
+                        ? 'bg-[#3b82f6] text-white shadow-md shadow-blue-500/25 font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`
+                  }
+                >
+                  <Server className="w-4 h-4 text-blue-500" />
+                  <span>Architecture & APIs</span>
+                </NavLink>
+
+                <NavLink
                   to="/tasks"
                   className={({ isActive }) =>
                     `flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all ${
@@ -145,6 +161,7 @@ export const AppLayout: React.FC = () => {
                   <Layers className="w-4 h-4 text-blue-500" />
                   <span>Tasks</span>
                 </NavLink>
+
               </div>
 
               {/* INTELLIGENCE & ASSURANCE */}

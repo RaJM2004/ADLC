@@ -38,11 +38,21 @@ GENQUANTAA ADLC defines a versioned registry of 11 specialist AI agents. In Mile
 
 ---
 
-## 3. Architecture and API Design Agent (`agent_03_architecture_api`) — *Planned*
-- **Status**: Planned
-- **Version**: 0.1.0-draft
-- **Input Schema**: Approved requirements, tech stack constraints, security boundary, data classification.
-- **Output Schema**: Component architecture, OpenAPI contracts, schema proposals, data flow specs.
+## 3. Architecture and API Design Agent (`agent_03_architecture_api`) — **Active MVP**
+- **Status**: Active (MVP)
+- **Version**: 1.0.0
+- **Input Schema**:
+  - `approved_requirements`: locked requirements from Agent 1
+  - `tech_stack_constraints`: FastAPI, React, MongoDB Atlas, OpenAPI 3.1
+  - `gxp_security_boundary`: 21 CFR Part 11, TLS 1.3, SHA-256 HMAC ledger
+- **Output Schema**:
+  - `component_topology`: Microservice topology with GxP compliance notes
+  - `openapi_endpoints`: Complete REST endpoint specs (methods, paths, request/response contracts, linked reqs)
+  - `cdisc_data_dictionary`: CDISC SDTM v3.3 clinical variable types and validation bounds
+  - `security_boundary`: 21 CFR Part 11 electronic records controls
+- **Allowed Tools**: OpenAPI generator, Schema synthesizer, CDISC terminology validator.
+- **Review Requirement**: Reviewable by System Architect before implementation sprints.
+
 
 ---
 
