@@ -13,7 +13,6 @@ import {
   Settings,
   History,
   Search,
-  List,
   Plus,
   LogOut,
   HelpCircle,
@@ -34,7 +33,6 @@ export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
   const { projects, selectedProjectId, setSelectedProjectId } = useProject();
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const handleQuickNewProject = async () => {
@@ -328,31 +326,6 @@ export const AppLayout: React.FC = () => {
                 </select>
               </div>
 
-              {/* Grid / List Switcher Pill */}
-              <div className="flex items-center p-1 bg-[#f1f5f9] rounded-full border border-slate-200/50">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
-                    viewMode === 'grid'
-                      ? 'bg-[#3b82f6] text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-900'
-                  }`}
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  <span>Grid</span>
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
-                    viewMode === 'list'
-                      ? 'bg-[#3b82f6] text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-900'
-                  }`}
-                >
-                  <List className="w-3.5 h-3.5" />
-                  <span>List</span>
-                </button>
-              </div>
 
               {/* + New Project Button */}
               <button
